@@ -72,5 +72,4 @@ func (c *Cache) ReapLoop() {
 			c.reap()
 		}
 	}
-
 }

@@ -1,9 +1,11 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"math/rand"
 	"os"
+	"strings"
 )
 
 type cliCommand struct {
@@ -62,7 +64,30 @@ var cmdList = map[string]cliCommand{
 		description: "",
 		callback:    commandInspect,
 	},
+	"pokedex": {
+		name:        "pokedex",
+		description: "",
+		callback:    commandPokedex,
+	},
 	// help is put into by main to break "Initialization cycle"
+}
+
+// protect against names that could corrupt url if appended
+// certainly no ../../  &=/#?%
+func dirtyNameRune(r rune) bool {
+	if r >= '0' && r <= '9' {
+		return false
+	}
+	if r >= 'a' && r <= 'z' {
+		return false
+	}
+	if r == '-' {
+		return false
+	}
+	return true
+}
+func dirtyName(text string) bool {
+	return strings.ContainsFunc(text, dirtyNameRune)
 }
 
 func commandExit([]string) error {
@@ -105,6 +130,13 @@ func commandMapb([]string) error {
 }
 
 func commandExplore(args []string) error {
+	if len(args) <= 1 {
+		return errors.New("not enough arguments")
+	}
+	if dirtyName(args[1]) {
+		fmt.Println("not a proper area name")
+		return errors.New("dirty name")
+	}
 	locArea, err := getExploreResult(args[1])
 	if err != nil {
 		fmt.Println("could not explore area")
@@ -120,21 +152,35 @@ func commandExplore(args []string) error {
 }
 
 func commandCatch(args []string) error {
+	if len(args) <= 1 {
+		return errors.New("not enough arguments")
+	}
+	if dirtyName(args[1]) {
+		fmt.Println("not a proper pokemon name")
+		return errors.New("dirty name")
+	}
 	poke, err := getPokemonResult(args[1])
 	if err != nil {
-		fmt.Println("could not catch pokemon")
+		fmt.Printf("could not find pokemon named \"%s\" to catch\n", args[1])
 		return err
 	}
 	fmt.Printf("Throwing a Pokeball at %s...\n", args[1])
-	power := rand.Intn(200 + cmdGLOBS.xp)
+	lowXpMaxPower := poke.Base_experience + 5 + poke.Base_experience/144
+	normMaxPower := cmdGLOBS.xp + 40 + rand.Intn(max(50, cmdGLOBS.xp, poke.Base_experience/2))
+	power := rand.Intn(max(lowXpMaxPower, normMaxPower))
+	var closeXpGain int
+	if (power+75 > poke.Base_experience) && (power-75 < poke.Base_experience) {
+		closeXpGain = rand.Intn(power/3+15+poke.Base_experience/7) + 1
+	}
 	if power >= poke.Base_experience {
-		xpGain := max(10, (poke.Base_experience-cmdGLOBS.xp)/10)
+		xpGain := max(10, (poke.Base_experience-cmdGLOBS.xp)/8, closeXpGain)
 		cmdGLOBS.xp += xpGain
 		fmt.Printf("%s was caught!\n", args[1])
 		cmdGLOBS.caught[args[1]] = poke
 	} else {
+		xpGain := max(1, (poke.Base_experience-cmdGLOBS.xp)/13, closeXpGain)
 		fmt.Printf("%s escaped!\n", args[1])
-		cmdGLOBS.xp++
+		cmdGLOBS.xp += xpGain
 	}
 	//fmt.Printf("base %d\n", poke.Base_experience)
 	//fmt.Printf("stats %v\n", poke.Stats)
@@ -142,6 +188,38 @@ func commandCatch(args []string) error {
 	return nil
 }
 
-func commandInspect([]string) error {
+func commandInspect(args []string) error {
+	if len(args) <= 1 {
+		return errors.New("not enough arguments")
+	}
+	if dirtyName(args[1]) {
+		fmt.Println("not a proper pokemon name")
+		return errors.New("dirty name")
+	}
+	poke, ok := cmdGLOBS.caught[args[1]]
+	if ok {
+		fmt.Printf("Name: %s\n", poke.Name)
+		fmt.Printf("Height: %d\n", poke.Height)
+		fmt.Printf("Weight: %d\n", poke.Weight)
+		fmt.Println("Stats:")
+		for _, stat := range poke.Stats {
+			fmt.Printf(" - %s: %d\n", stat.Stat.Name, stat.Base_stat)
+		}
+		fmt.Println("Types:")
+		for _, pType := range poke.Types {
+			fmt.Printf(" - %s\n", pType.Type.Name)
+		}
+
+	} else {
+		fmt.Println("you have not caught that pokemon")
+	}
+	return nil
+}
+
+func commandPokedex(args []string) error {
+	fmt.Println("Your Pokedex:")
+	for _, poke := range cmdGLOBS.caught {
+		fmt.Printf(" - %s\n", poke.Name)
+	}
 	return nil
 }

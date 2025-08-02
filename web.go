@@ -1,7 +1,9 @@
 package main
 
 import (
+	//"errors"
 	"io"
+
 	//"bytes"
 	"encoding/json"
 	"fmt"
@@ -79,7 +81,7 @@ func getPokeBytes(url string) ([]byte, error) {
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		fmt.Printf("bad get")
+		fmt.Printf("bad get\n")
 		return retBytes, err
 	}
 	req.Header.Set("Content-Type", "application/json")
@@ -87,14 +89,19 @@ func getPokeBytes(url string) ([]byte, error) {
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
-		fmt.Printf("bad do")
+		fmt.Printf("bad do\n")
 		return retBytes, err
 	}
 	defer res.Body.Close()
 
+	if res.StatusCode > 270 {
+		//fmt.Printf("status %d\n", res.StatusCode)
+		//return retBytes, errors.New("bad status")
+		return retBytes, fmt.Errorf("bad status: %d", res.StatusCode)
+	}
 	data, err := io.ReadAll(res.Body)
 	if nil != err {
-		fmt.Printf("bad readall")
+		fmt.Printf("bad readall\n")
 		return retBytes, err
 	}
 	webGLOBS.cache.Add(url, data)
@@ -106,7 +113,7 @@ func getPokeResourceList(url string) (PokeNamedAPIResourceList, error) {
 	ret := PokeNamedAPIResourceList{}
 	locAreaReq, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		fmt.Printf("bad get")
+		fmt.Printf("bad get\n")
 		return ret, err
 	}
 	locAreaReq.Header.Set("Content-Type", "application/json")
@@ -114,19 +121,19 @@ func getPokeResourceList(url string) (PokeNamedAPIResourceList, error) {
 	client := &http.Client{}
 	res, err := client.Do(locAreaReq)
 	if err != nil {
-		fmt.Printf("bad do")
+		fmt.Printf("bad do\n")
 		return ret, err
 	}
 	defer res.Body.Close()
 
 	data, err := io.ReadAll(res.Body)
 	if nil != err {
-		fmt.Printf("bad readall")
+		fmt.Printf("bad readall\n")
 		return ret, err
 	}
 	//fmt.Println(string(data))
 	if err := json.Unmarshal(data, &ret); err != nil {
-		fmt.Printf("bad unmarshal")
+		fmt.Printf("bad unmarshal\n")
 		return ret, err
 	}
 
@@ -189,7 +196,7 @@ func getNamedResourceResult(rsrcList *pokeNamedAPIResourceListResults, indx int)
 		//fmt.Printf(" nmd lst at indx0(%d) %s\n", len(nmdLst.Results), nmdLst.String())
 		return nmdLst, nil
 	}
-	fmt.Println("getNamedResourceResult after zero indx")
+	//fmt.Println("getNamedResourceResult after zero indx")
 	if indx < 0 {
 		return nmdLst, fmt.Errorf("negative index not allowed")
 	}
@@ -204,7 +211,7 @@ func getNamedResourceResult(rsrcList *pokeNamedAPIResourceListResults, indx int)
 		rsrcList.linkedList = append(rsrcList.linkedList, nmdLst)
 		//rsrcList.linkedList[i] = nmdLst
 	}
-	fmt.Printf(" nmd lst %s\n", nmdLst.String())
+	//fmt.Printf(" nmd lst %s\n", nmdLst.String())
 	return nmdLst, nil
 
 }

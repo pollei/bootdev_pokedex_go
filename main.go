@@ -28,6 +28,9 @@ func main() {
 		cleanLine := cleanInput(lineStr)
 		//fmt.Printf("Your command was: %s\n", cleanLine[0])
 		//if "exit" == cleanLine[0] { break }
+		if len(cleanLine) <= 0 {
+			continue
+		}
 		cmd, ok := cmdList[cleanLine[0]]
 		if ok {
 			cmd.callback(cleanLine)
