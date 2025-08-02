@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
 	"os"
 )
 
@@ -12,16 +13,23 @@ type cliCommand struct {
 }
 
 /*
-type cliConfigUrls struct {
-	previous string
-	next     string
-}
+	type cliConfigUrls struct {
+		previous string
+		next     string
+	}
+
 type cliConfigEmpty struct {
 }
-type cliConfig interface {
-	//cliConfigUrls | cliConfigEmpty
 
-} */
+	type cliConfig interface {
+		//cliConfigUrls | cliConfigEmpty
+
+}
+*/
+var cmdGLOBS = struct {
+	xp     int
+	caught map[string]Pokemon
+}{}
 
 var cmdList = map[string]cliCommand{
 	"exit": {
@@ -46,7 +54,7 @@ var cmdList = map[string]cliCommand{
 	},
 	"catch": {
 		name:        "catch",
-		description: "",
+		description: "try catching a pokemon by name",
 		callback:    commandCatch,
 	},
 	"inspect": {
@@ -111,7 +119,26 @@ func commandExplore(args []string) error {
 	return nil
 }
 
-func commandCatch([]string) error {
+func commandCatch(args []string) error {
+	poke, err := getPokemonResult(args[1])
+	if err != nil {
+		fmt.Println("could not catch pokemon")
+		return err
+	}
+	fmt.Printf("Throwing a Pokeball at %s...\n", args[1])
+	power := rand.Intn(200 + cmdGLOBS.xp)
+	if power >= poke.Base_experience {
+		xpGain := max(10, (poke.Base_experience-cmdGLOBS.xp)/10)
+		cmdGLOBS.xp += xpGain
+		fmt.Printf("%s was caught!\n", args[1])
+		cmdGLOBS.caught[args[1]] = poke
+	} else {
+		fmt.Printf("%s escaped!\n", args[1])
+		cmdGLOBS.xp++
+	}
+	//fmt.Printf("base %d\n", poke.Base_experience)
+	//fmt.Printf("stats %v\n", poke.Stats)
+	//fmt.Printf("typess %v\n", poke.Types)
 	return nil
 }
 

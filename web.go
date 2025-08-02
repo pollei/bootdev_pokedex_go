@@ -44,6 +44,24 @@ type PokeLocationArea struct {
 	Id                 int
 	Pokemon_encounters []PokeEncounter
 }
+type PokemonStat struct {
+	Base_stat int
+	Effort    int
+	Stat      PokeNamedAPIResource
+}
+type PokemonType struct {
+	Slot int
+	Type PokeNamedAPIResource
+}
+type Pokemon struct {
+	Name            string
+	Id              int
+	Base_experience int
+	Height          int
+	Weight          int
+	Stats           []PokemonStat
+	Types           []PokemonType
+}
 
 var webGLOBS = struct {
 	localAreas     PokeNamedAPIResourceList
@@ -55,6 +73,7 @@ func getPokeBytes(url string) ([]byte, error) {
 	var retBytes []byte
 	cacheByte, ok := webGLOBS.cache.Get(url)
 	if ok {
+		//fmt.Printf("cache hit: %s\n", url)
 		return cacheByte, nil
 	}
 
@@ -126,6 +145,20 @@ func getPokeResourceList(url string) (PokeNamedAPIResourceList, error) {
 func getExploreResult(name string) (PokeLocationArea, error) {
 	var ret PokeLocationArea
 	data, err := getPokeBytes("https://pokeapi.co/api/v2/location-area/" + name)
+	if err != nil {
+		return ret, err
+	}
+	if err := json.Unmarshal(data, &ret); err != nil {
+		fmt.Printf("bad unmarshal")
+		return ret, err
+	}
+	return ret, nil
+
+}
+
+func getPokemonResult(name string) (Pokemon, error) {
+	var ret Pokemon
+	data, err := getPokeBytes("https://pokeapi.co/api/v2/pokemon/" + name)
 	if err != nil {
 		return ret, err
 	}

@@ -18,6 +18,7 @@ func main() {
 		name: "help", description: "Displays a help message", callback: commandHelp}
 	webGLOBS.cache = *pokecache.NewCache(5 * time.Minute)
 	webGLOBS.localAreasList.baseUrl = "https://pokeapi.co/api/v2/location-area/"
+	cmdGLOBS.caught = make(map[string]Pokemon, 25)
 	getNamedResourceResult(&webGLOBS.localAreasList, 0)
 
 	for {
