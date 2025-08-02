@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
+
+	"github.com/pollei/bootdev_pokedex_go/internal/pokecache"
 )
 
 func main() {
@@ -13,6 +16,7 @@ func main() {
 	// help put  in by hand to break "Initialization cycle"
 	cmdList["help"] = cliCommand{
 		name: "help", description: "Displays a help message", callback: commandHelp}
+	webGLOBS.cache = *pokecache.NewCache(5 * time.Minute)
 	webGLOBS.localAreasList.baseUrl = "https://pokeapi.co/api/v2/location-area/"
 	getNamedResourceResult(&webGLOBS.localAreasList, 0)
 
@@ -25,7 +29,7 @@ func main() {
 		//if "exit" == cleanLine[0] { break }
 		cmd, ok := cmdList[cleanLine[0]]
 		if ok {
-			cmd.callback()
+			cmd.callback(cleanLine)
 		} else {
 			fmt.Println("Unknown command")
 		}

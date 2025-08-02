@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+
+	"github.com/pollei/bootdev_pokedex_go/internal/pokecache"
 	//"errors"
 )
 
@@ -35,10 +37,51 @@ type pokeNamedAPIResourceListResults struct {
 	currIndx   int
 }
 
+type PokeEncounter struct {
+	Pokemon PokeNamedAPIResource
+}
+type PokeLocationArea struct {
+	Id                 int
+	Pokemon_encounters []PokeEncounter
+}
+
 var webGLOBS = struct {
 	localAreas     PokeNamedAPIResourceList
 	localAreasList pokeNamedAPIResourceListResults
+	cache          pokecache.Cache
 }{}
+
+func getPokeBytes(url string) ([]byte, error) {
+	var retBytes []byte
+	cacheByte, ok := webGLOBS.cache.Get(url)
+	if ok {
+		return cacheByte, nil
+	}
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		fmt.Printf("bad get")
+		return retBytes, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	res, err := client.Do(req)
+	if err != nil {
+		fmt.Printf("bad do")
+		return retBytes, err
+	}
+	defer res.Body.Close()
+
+	data, err := io.ReadAll(res.Body)
+	if nil != err {
+		fmt.Printf("bad readall")
+		return retBytes, err
+	}
+	webGLOBS.cache.Add(url, data)
+	// fmt.Println(string(data))
+	return data, nil
+}
 
 func getPokeResourceList(url string) (PokeNamedAPIResourceList, error) {
 	ret := PokeNamedAPIResourceList{}
@@ -78,6 +121,20 @@ func getPokeResourceList(url string) (PokeNamedAPIResourceList, error) {
 		return ret, err
 	}
 	return ret, nil */
+}
+
+func getExploreResult(name string) (PokeLocationArea, error) {
+	var ret PokeLocationArea
+	data, err := getPokeBytes("https://pokeapi.co/api/v2/location-area/" + name)
+	if err != nil {
+		return ret, err
+	}
+	if err := json.Unmarshal(data, &ret); err != nil {
+		fmt.Printf("bad unmarshal")
+		return ret, err
+	}
+	return ret, nil
+
 }
 
 func getNamedResourceResult(rsrcList *pokeNamedAPIResourceListResults, indx int) (PokeNamedAPIResourceList, error) {

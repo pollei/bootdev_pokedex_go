@@ -8,7 +8,7 @@ import (
 type cliCommand struct {
 	name        string
 	description string
-	callback    func() error
+	callback    func([]string) error
 }
 
 /*
@@ -39,16 +39,31 @@ var cmdList = map[string]cliCommand{
 		description: "displays the previous names of 20 location areas in the Pokemon world",
 		callback:    commandMapb,
 	},
+	"explore": {
+		name:        "explore",
+		description: "lists Pokemon's names in a location",
+		callback:    commandExplore,
+	},
+	"catch": {
+		name:        "catch",
+		description: "",
+		callback:    commandCatch,
+	},
+	"inspect": {
+		name:        "inspect",
+		description: "",
+		callback:    commandInspect,
+	},
 	// help is put into by main to break "Initialization cycle"
 }
 
-func commandExit() error {
+func commandExit([]string) error {
 	fmt.Println("Closing the Pokedex... Goodbye!")
 	os.Exit(0)
 	return nil
 }
 
-func commandHelp() error {
+func commandHelp([]string) error {
 	fmt.Print("Welcome to the Pokedex!\nUsage: \n\n")
 	for _, cmdItm := range cmdList {
 		fmt.Printf("%s: %s\n", cmdItm.name, cmdItm.description)
@@ -59,7 +74,7 @@ func commandHelp() error {
 	return nil
 }
 
-func commandMap() error {
+func commandMap([]string) error {
 	getNamedResourceResult(&webGLOBS.localAreasList, webGLOBS.localAreasList.currIndx)
 	fmt.Printf("%s\n",
 		webGLOBS.localAreasList.linkedList[webGLOBS.localAreasList.currIndx].String())
@@ -69,7 +84,7 @@ func commandMap() error {
 	return nil
 }
 
-func commandMapb() error {
+func commandMapb([]string) error {
 	if webGLOBS.localAreasList.currIndx > 0 {
 		webGLOBS.localAreasList.currIndx--
 	} else {
@@ -78,5 +93,28 @@ func commandMapb() error {
 	}
 	fmt.Printf("%s\n",
 		(webGLOBS.localAreasList.linkedList[webGLOBS.localAreasList.currIndx]).String())
+	return nil
+}
+
+func commandExplore(args []string) error {
+	locArea, err := getExploreResult(args[1])
+	if err != nil {
+		fmt.Println("could not explore area")
+		return err
+	}
+	pokeLst := locArea.Pokemon_encounters
+	fmt.Printf("Exploring p%s..\nFound Pokemon:\n", args[1])
+	//fmt.Printf("encounter %v %d", locArea.Pokemon_encounters, len(locArea.Pokemon_encounters))
+	for _, poke := range pokeLst {
+		fmt.Println(" - " + poke.Pokemon.Name)
+	}
+	return nil
+}
+
+func commandCatch([]string) error {
+	return nil
+}
+
+func commandInspect([]string) error {
 	return nil
 }
